@@ -2,6 +2,19 @@
 
 All notable changes to `laravel-vat-eu-validator` will be documented in this file
 
+## 1.2.0 - 2026-11-03
+
+### What's Changed
+
+* chore: add dependency-health skill by @robert-stanciu in https://github.com/Kronos-IT-Support-Consulting/laravel-vat-eu-validator/pull/1
+* Sync with upstream danielebarbaro/laravel-vat-eu-validator (v3.5.0) by @robert-stanciu in https://github.com/Kronos-IT-Support-Consulting/laravel-vat-eu-validator/pull/2
+
+### New Contributors
+
+* @robert-stanciu made their first contribution in https://github.com/Kronos-IT-Support-Consulting/laravel-vat-eu-validator/pull/1
+
+**Full Changelog**: https://github.com/Kronos-IT-Support-Consulting/laravel-vat-eu-validator/compare/1.1.1...1.2.0
+
 ## Laravel Boost guidelines - 2026-10-02
 
 ### ✨ New
@@ -162,8 +175,8 @@ try {
         // Retry with backoff
     }
 }
-```
 
+```
 ### 🧪 Testing
 
 - New unit tests in `tests/Vies/ViesRestClientTest.php` covering the
@@ -299,6 +312,7 @@ $validator = new VatValidator(new ViesRestClient());
 
 
 
+
 ```
 ##### If you want to switch to the REST client
 
@@ -307,6 +321,7 @@ $validator = new VatValidator(new ViesRestClient());
 
 ```php
 'client' => ViesRestClient::CLIENT_NAME,
+
 
 
 
