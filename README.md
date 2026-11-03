@@ -1,13 +1,22 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/danielebarbaro/laravel-vat-eu-validator/main/art/banner.png" alt="Laravel VAT EU Validator">
+</p>
+
 # Laravel VAT EU VALIDATOR
 
-[![Latest Version on Packagist](https://img.shields.io/packagist/v/danielebarbaro/laravel-vat-eu-validator.svg?style=flat-square)](https://packagist.org/packages/danielebarbaro/laravel-vat-eu-validator)
-[![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/danielebarbaro/laravel-vat-eu-validator/run-tests.yml?branch=main&label=tests)](https://github.com/danielebarbaro/laravel-vat-eu-validator/actions?query=workflow%3Arun-tests+branch%3Amain)
-[![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/danielebarbaro/laravel-vat-eu-validator/php-cs-fixer.yml?branch=main&label=code%20style)](https://github.com/danielebarbaro/laravel-vat-eu-validator/actions?query=workflow%3A%22Check+%26+fix+styling%22+branch%3Amain)
-[![Total Downloads](https://img.shields.io/packagist/dt/danielebarbaro/laravel-vat-eu-validator.svg?style=flat-square)](https://packagist.org/packages/danielebarbaro/laravel-vat-eu-validator)
+<p align="center">
+    <a href="https://packagist.org/packages/danielebarbaro/laravel-vat-eu-validator"><img src="https://img.shields.io/packagist/v/danielebarbaro/laravel-vat-eu-validator.svg?style=flat-square" alt="Packagist"></a>
+    <a href="https://packagist.org/packages/danielebarbaro/laravel-vat-eu-validator"><img src="https://img.shields.io/packagist/php-v/danielebarbaro/laravel-vat-eu-validator.svg?style=flat-square" alt="PHP from Packagist"></a>
+    <a href="https://packagist.org/packages/danielebarbaro/laravel-vat-eu-validator"><img src="https://badge.laravel.cloud/badge/danielebarbaro/laravel-vat-eu-validator?style=flat" alt="Laravel versions"></a>
+    <a href="https://github.com/danielebarbaro/laravel-vat-eu-validator/actions"><img alt="GitHub Workflow Status (main)" src="https://img.shields.io/github/actions/workflow/status/danielebarbaro/laravel-vat-eu-validator/run-tests.yml?branch=main&label=Tests&style=flat-square"></a>
+    <a href="https://packagist.org/packages/danielebarbaro/laravel-vat-eu-validator"><img src="https://img.shields.io/packagist/dt/danielebarbaro/laravel-vat-eu-validator.svg?style=flat-square" alt="Total Downloads"></a>
+</p>
 
-laravel-vat-eu-validator is a package inspired from [vat.php](https://github.com/dannyvankooten/vat.php) to validate a VAT number for businesses based in Europe.
+laravel-vat-eu-validator is a package inspired by [vat.php](https://github.com/dannyvankooten/vat.php) to validate a VAT number for businesses based in Europe.
 
 #### For Laravel 10, 11, 12, 13 use tag 3.x
+
+> **Note on Laravel 10 and 11.** Both branches are end of life and every released version is flagged by a Composer security advisory, so Composer 2.9 and later refuse to install them by default. The package constraints still allow them, but CI only covers Laravel 12 and 13. If you are still on Laravel 10 or 11, plan an upgrade.
 
 #### For Laravel 10, 11, 12 use tag 2.x (legacy SOAP-only)
 
@@ -21,7 +30,7 @@ laravel-vat-eu-validator is a package inspired from [vat.php](https://github.com
 - **Strategy Pattern architecture**: ViesClientInterface interface with ViesSoapClient and ViesRestClient implementations
 - **Publishable configuration file**: choose which client to use and configure its parameters
 - **Restructured test suite**: separation between unit and functional tests
-- **PHP 8.4 e 8.5 support**
+- **PHP 8.4 and 8.5 support**
 
 ## Installation
 
@@ -116,7 +125,7 @@ You can adjust the timeout for API requests:
 use Danielebarbaro\LaravelVatEuValidator\Facades\VatValidatorFacade as VatValidator;
 
 // Check VAT format and VIES existence
-VatValidator::validate('IT12345');
+VatValidator::validate('IT12345678901');
 
 // Check VAT format
 VatValidator::validateFormat('IT12345678901'); 
@@ -198,19 +207,19 @@ retrying after a backoff is appropriate.
 
 #### Validation
 
-The package registers two new validation rules.
+The package registers three new validation rules.
 
 **vat_number**
 
-The field under validation must be a valid and existing VAT number.
+The field under validation must be a correctly formatted VAT number that also exists in VIES.
 
 **vat_number_exist**
 
-The field under validation check id is an existing VAT number.
+The field under validation must be a VAT number that exists in VIES.
 
 **vat_number_format**
 
-The field under validation must be a valid VAT number.
+The field under validation must be a correctly formatted VAT number. VIES is not queried.
 
 ```php
 use Illuminate\Http\Request;
@@ -234,62 +243,40 @@ class Controller {
 }
 ```
 
-Alternatively, you can also use the `Rule` directly.
+Alternatively, import the rules instead of writing the fully qualified names.
 
 ```php
 use Illuminate\Http\Request;
-use Danielebarbaro\LaravelVatEuValidator\Rules;
+use Danielebarbaro\LaravelVatEuValidator\Rules\VatNumber;
+use Danielebarbaro\LaravelVatEuValidator\Rules\VatNumberExist;
+use Danielebarbaro\LaravelVatEuValidator\Rules\VatNumberFormat;
 
 class Controller {
 
     public function foo(Request $request) 
     {
         $request->validate([
-            'bar_field' => [ new \Danielebarbaro\LaravelVatEuValidator\Rules\VatNumber() ],
-            'bar_field' => [ new \Danielebarbaro\LaravelVatEuValidator\Rules\VatNumberExist() ],
-            'bar_field' => [ new \Danielebarbaro\LaravelVatEuValidator\Rules\VatNumberFormat() ],
+            'bar_field' => [new VatNumber()],
+            'baz_field' => [new VatNumberExist()],
+            'qux_field' => [new VatNumberFormat()],
         ]);
     }
 }
 ```
 
-or
+Each rule can also be referenced by its string name.
 
 ```php
 use Illuminate\Http\Request;
-use Danielebarbaro\LaravelVatEuValidator\Rules;
 
 class Controller {
 
     public function foo(Request $request)
     {
         $request->validate([
-            'bar_field' => [
-                new \Danielebarbaro\LaravelVatEuValidator\Rules\VatNumber(),
-                new \Danielebarbaro\LaravelVatEuValidator\Rules\VatNumberExist(),
-                new \Danielebarbaro\LaravelVatEuValidator\Rules\VatNumberFormat(),
-            ],
-        ]);
-    }
-}
-```
-
-or
-
-```php
-use Illuminate\Http\Request;
-use Danielebarbaro\LaravelVatEuValidator\Rules;
-
-class Controller {
-
-    public function foo(Request $request)
-    {
-        $request->validate([
-            'bar_field' => [
-                'vat_number',
-                'vat_number_format',
-                'vat_number_exist',
-            ],
+            'bar_field' => ['vat_number'],
+            'baz_field' => ['vat_number_format'],
+            'qux_field' => ['vat_number_exist'],
         ]);
     }
 }
@@ -343,6 +330,14 @@ $validator = new VatValidator(new ViesRestClient());
 
 ### If your tests reference `Vies\Client`
 Update references to `ViesSoapClient` or use `ViesClientInterface` for mocking.
+
+## AI guidelines (Laravel Boost)
+
+This package ships AI guidelines for [Laravel Boost](https://github.com/laravel/boost), at the path the Boost documentation gives package authors:
+
+- `resources/boost/guidelines/core.blade.php`, a short always in context brief on the three validation rules, the facade, choosing the SOAP or REST client, and handling a `ViesException` when VIES is unavailable.
+
+Install Boost 2.5 or higher with `composer require laravel/boost --dev` then `php artisan boost:install`, selecting this package when Boost asks which third party guidelines to install. On an app that already has Boost installed, `php artisan boost:update --discover` offers the newly detected package.
 
 ## Contributing
 

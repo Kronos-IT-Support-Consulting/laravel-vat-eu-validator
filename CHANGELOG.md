@@ -2,6 +2,125 @@
 
 All notable changes to `laravel-vat-eu-validator` will be documented in this file
 
+## Laravel Boost guidelines - 2026-10-02
+
+### ✨ New
+
+* AI guidelines for [Laravel Boost](https://github.com/laravel/boost) in `resources/boost/guidelines/core.blade.php`. They cover the three validation rules, the facade, the SOAP and REST client configuration and how VIES failures surface. Boost picks them up on `php artisan boost:install`, or on `php artisan boost:update --discover` in an app that already uses it. `laravel/boost` is only suggested, never required.
+
+### 🔧 Maintenance
+
+* A drift test checks every class, method, config key, env variable, rule name, translation key and publish tag named in the guidelines against the code, so a rename that leaves them stale fails CI.
+
+No runtime code changed.
+
+**Full Changelog**: https://github.com/danielebarbaro/laravel-vat-eu-validator/compare/v3.4.3...v3.5.0
+
+## Irish VAT format fix - 2026-09-13
+
+### 🐛 Fixes
+
+* Old style `IE` numbers, whose second character is a `+` or a `*`, are now accepted. The `IE` pattern was `[A-Z\d]{8}|[A-Z\d]{9}`, which only checked the length and allowed neither character, so a number such as `IE1+23456A` was rejected.
+* The same pattern accepted numbers made only of digits (`IE12345678`) or only of letters (`IEABCDEFGH`). VIES issues neither, so both are now rejected. The pattern is now `\d{7}[A-W][A-IW]?|\d[A-Z+*]\d{5}[A-W]`, one branch per official format.
+
+### 🔧 Maintenance
+
+* Test coverage for `IE` covering both styles, the `+` and `*` variants, lowercase input, surrounding spaces, check letters out of range and wrong lengths.
+* The README validation section announced two rules instead of three, described `vat_number_exist` and `vat_number_format` incorrectly, and carried two examples that repeated the same array key three times, so only the last rule of each example was applied.
+
+Old style `IE` numbers were rejected before and are accepted now. Numbers made only of digits or only of letters were accepted before and are rejected now. If you cache validation results, consider invalidating the `IE` ones.
+
+**Full Changelog**: https://github.com/danielebarbaro/laravel-vat-eu-validator/compare/v3.4.2...v3.4.3
+
+## Stricter BE, AT and SI patterns - 2026-09-13
+
+### 🐛 Fixes
+
+* The `BE` pattern was `(0\d{9}|\d{10})`. The first branch is a subset of the second, so the pattern was equivalent to `\d{10}` and accepted any ten digits. Belgian enterprise numbers always start with `0` or `1`, so the pattern is now `[01]\d{9}`. Reported by @bestmomo. Thank you! 🙏
+* The `AT` pattern accepted letters after the `U`. Austrian numbers carry eight digits, so `ATU1234567A` is no longer accepted.
+* The `SI` pattern accepted a leading zero. The first digit of a Slovenian tax number is never `0`, so `SI01234567` is no longer accepted.
+
+### 🔧 Maintenance
+
+* Test coverage for `BE`, `AT` and `SI` covering the accepted leading digits, lowercase input, surrounding spaces, wrong lengths and stray letters.
+
+The three patterns are now restrictive. Numbers accepted before and rejected now could never be issued, and the VIES existence check already discarded them in `validate()`, so only `validateFormat()` changes behaviour. If you cache validation results, consider invalidating the `BE`, `AT` and `SI` ones.
+
+**Full Changelog**: https://github.com/danielebarbaro/laravel-vat-eu-validator/compare/v3.4.1...v3.4.2
+
+## Swiss VAT format fix - 2026-09-10
+
+### 🐛 Fixes
+
+* `CHE` numbers without a `TVA`, `MWST` or `IVA` suffix are now accepted. The `CH` pattern required one of the three suffixes, so a bare UID such as `CHE123456789` was rejected even though the suffix only marks VAT registration. Contributed by @bestmomo. Thank you! 🙏
+
+### 🔧 Maintenance
+
+* The redundant inner `^` and `$` anchors were dropped from the `CH` pattern. Since v3.2.1 `validateFormat()` wraps every pattern in `^(?:...)$`, so they no longer had any effect.
+* Test coverage for `CH` covering 6 digit numbers, bare `CHE` UIDs, the three suffixes with and without a separating space, lowercase input, and malformed lengths, prefixes and suffixes.
+
+`CHE` numbers without a suffix were rejected before and are accepted now. If you cache validation results, consider invalidating the `CH` ones.
+
+**Full Changelog**: https://github.com/danielebarbaro/laravel-vat-eu-validator/compare/v3.4.0...v3.4.1
+
+## French VAT key validation - 2026-09-09
+
+### ✨ New
+
+* Checksum validation for French (`FR`) VAT numbers. The two digit numeric key is verified against the official Modulo 97 algorithm, `(12 + 3 * (SIREN % 97)) % 97`. Contributed by @bestmomo. Thank you! 🙏
+* The `FR` pattern now excludes the ambiguous letters `I` and `O`, and accepts mixed keys such as `2A` that the previous pattern rejected. Both follow the VIES specification.
+
+### 🔧 Maintenance
+
+* Alphanumeric `FR` keys carry no checksum, so they keep relying on the format pattern alone.
+* Test coverage for the official checksum example, numeric keys with a leading zero, SIREN values with leading zeros, alphanumeric keys, invalid checksums, forbidden letters in both key positions, and wrong SIREN lengths.
+* Replaced the `FR12345678901` fixture in the functional existence tests. Its key fails Modulo 97, so the fixture never reached VIES.
+
+`FR` numbers whose numeric key fails Modulo 97, or whose key contains `I` or `O`, were accepted before and are rejected now. They were never valid under the VIES specification. If you cache validation results, consider invalidating the `FR` ones.
+
+**Full Changelog**: https://github.com/danielebarbaro/laravel-vat-eu-validator/compare/v3.3.0...v3.4.0
+
+## Northern Ireland support - 2026-09-09
+
+### ✨ New
+
+* Support for Northern Ireland (`XI`) VAT numbers. Post Brexit, VIES no longer answers for `GB`, while `XI` covers Northern Ireland businesses trading in goods under the Protocol. Contributed by @bestmomo. Thank you! 🙏
+* The `XI` pattern matches the same formats as `GB`: 9 digits, 12 digits for branch traders, and the `GD` and `HA` prefixes followed by 3 digits.
+
+### 🔧 Maintenance
+
+* `GB` is left untouched, so nothing changes for existing users. Applications validating Northern Irish numbers should switch the prefix from `GB` to `XI`, since only `XI` is resolvable through VIES.
+* Test coverage for `XI` covering valid formats, casing and whitespace handling, malformed lengths, unknown prefixes, and an anchoring regression case.
+
+**Full Changelog**: https://github.com/danielebarbaro/laravel-vat-eu-validator/compare/v3.2.1...v3.3.0
+
+## Regex anchoring fix - 2026-09-08
+
+### 🐛 Fixes
+
+* Country patterns are now wrapped in a non-capturing group inside `validateFormat()`. Patterns with top level alternation (CH, ES, GB, IE) were anchoring only their first branch, so strings such as `ESXX12345678AYY` or `IEXX1234567WAYY` passed validation. Reported and fixed by @bestmomo. Thank you! 🙏
+
+### 🔧 Maintenance
+
+* Regression tests covering the ES, IE and GB leakage cases.
+* README: package banner, and Packagist and CI badges unified.
+
+VAT numbers that were accepted only because of this bug are now correctly rejected. If you cache validation results, consider invalidating them.
+
+## French translations and CI fixes - 2026-08-12
+
+### ✨ New
+
+* French translations, contributed by @bestmomo. Thank you! 🇫🇷
+
+### 🔧 Maintenance
+
+* Laravel 10 and 11 removed from the CI matrix. Composer 2.9 blocks packages affected by security advisories by default, and advisory `PKSA-mdq4-51ck-6kdq` covers every released Laravel 10 and 11 version. Both branches are EOL, so a patched release will never exist.
+* `orchestra/testbench` and `phpunit/phpunit` dev constraints raised to versions that resolve cleanly.
+* Bumped `actions/checkout` to v7.
+
+The `require` constraints are unchanged, so nothing changes for existing users.
+
 ## VAT lookup DTO and typed VIES error handling - 2026-04-30
 
 ### ✨ New Features
@@ -176,6 +295,10 @@ use Danielebarbaro\LaravelVatEuValidator\Vies\ViesRestClient;
 $validator = new VatValidator(new ViesRestClient());
 
 
+
+
+
+
 ```
 ##### If you want to switch to the REST client
 
@@ -184,6 +307,10 @@ $validator = new VatValidator(new ViesRestClient());
 
 ```php
 'client' => ViesRestClient::CLIENT_NAME,
+
+
+
+
 
 
 ```

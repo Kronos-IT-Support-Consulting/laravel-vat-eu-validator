@@ -8,6 +8,7 @@ use Danielebarbaro\LaravelVatEuValidator\VatValidatorServiceProvider;
 use Danielebarbaro\LaravelVatEuValidator\Vies\ViesClientInterface;
 use Danielebarbaro\LaravelVatEuValidator\Vies\ViesException;
 use Orchestra\Testbench\TestCase;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class VatValidatorTest extends TestCase
 {
@@ -33,6 +34,320 @@ class VatValidatorTest extends TestCase
     public function testVatValidFormatFail(): void
     {
         self::assertFalse($this->validator->validateFormat($this->fake_vat));
+    }
+
+    #[DataProvider('invalidVatFormatsProvider')]
+    public function testVatFormatAlternationLeakage(string $vat_number): void
+    {
+        self::assertFalse($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('validXiVatFormatsProvider')]
+    public function testXiVatValidFormat(string $vat_number): void
+    {
+        self::assertTrue($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('invalidXiVatFormatsProvider')]
+    public function testXiVatInvalidFormat(string $vat_number): void
+    {
+        self::assertFalse($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('validFrVatFormatsProvider')]
+    public function testFrVatValidFormat(string $vat_number): void
+    {
+        self::assertTrue($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('invalidFrVatFormatsProvider')]
+    public function testFrVatInvalidFormat(string $vat_number): void
+    {
+        self::assertFalse($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('validChVatFormatsProvider')]
+    public function testChVatValidFormat(string $vat_number): void
+    {
+        self::assertTrue($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('invalidChVatFormatsProvider')]
+    public function testChVatInvalidFormat(string $vat_number): void
+    {
+        self::assertFalse($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('validBeVatFormatsProvider')]
+    public function testBeVatValidFormat(string $vat_number): void
+    {
+        self::assertTrue($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('invalidBeVatFormatsProvider')]
+    public function testBeVatInvalidFormat(string $vat_number): void
+    {
+        self::assertFalse($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('validAtVatFormatsProvider')]
+    public function testAtVatValidFormat(string $vat_number): void
+    {
+        self::assertTrue($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('invalidAtVatFormatsProvider')]
+    public function testAtVatInvalidFormat(string $vat_number): void
+    {
+        self::assertFalse($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('validSiVatFormatsProvider')]
+    public function testSiVatValidFormat(string $vat_number): void
+    {
+        self::assertTrue($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('invalidSiVatFormatsProvider')]
+    public function testSiVatInvalidFormat(string $vat_number): void
+    {
+        self::assertFalse($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('validIeVatFormatsProvider')]
+    public function testIeVatValidFormat(string $vat_number): void
+    {
+        self::assertTrue($this->validator->validateFormat($vat_number));
+    }
+
+    #[DataProvider('invalidIeVatFormatsProvider')]
+    public function testIeVatInvalidFormat(string $vat_number): void
+    {
+        self::assertFalse($this->validator->validateFormat($vat_number));
+    }
+
+    /**
+     * Numbers whose alternation branches used to match unanchored.
+     *
+     * @return array<string, array<string>>
+     */
+    public static function invalidVatFormatsProvider(): array
+    {
+        return [
+            'ES leakage test' => ['ESXX12345678AYY'],
+            'IE leakage test' => ['IEXX1234567WAYY'],
+            'GB leakage test' => ['GBXX123456789012YY'],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function validXiVatFormatsProvider(): array
+    {
+        return [
+            'XI valid standard 9 digits' => ['XI123456789'],
+            'XI valid 12 digits' => ['XI123456789012'],
+            'XI valid special prefix GD' => ['XIGD123'],
+            'XI valid special prefix HA' => ['XIHA123'],
+            'XI valid lowercase' => ['xi123456789'],
+            'XI valid with surrounding spaces' => [' XI123456789 '],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function invalidXiVatFormatsProvider(): array
+    {
+        return [
+            'XI invalid 8 digits' => ['XI12345678'],
+            'XI invalid 10 digits' => ['XI1234567890'],
+            'XI invalid 13 digits' => ['XI1234567890123'],
+            'XI invalid characters' => ['XIA12345678'],
+            'XI invalid GD too short' => ['XIGD12'],
+            'XI invalid HA too long' => ['XIHA1234'],
+            'XI invalid unknown prefix' => ['XIZZ123'],
+            'XI leakage test' => ['XIXX123456789012YY'],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function validFrVatFormatsProvider(): array
+    {
+        return [
+            'FR valid numeric key (Modulo 97)' => ['FR40303265045'],
+            'FR valid numeric key from the official example' => ['FR83404833048'],
+            'FR valid numeric key with a leading zero' => ['FR00100000012'],
+            'FR valid SIREN with leading zeros' => ['FR34000123456'],
+            'FR valid alphabetic key without forbidden chars' => ['FRHU356000000'],
+            'FR valid alphanumeric key' => ['FR2A356000000'],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function invalidFrVatFormatsProvider(): array
+    {
+        return [
+            'FR invalid modulo 97 key' => ['FR41303265045'],
+            'FR forbidden letter O in first key char' => ['FRO0303265045'],
+            'FR forbidden letter I in first key char' => ['FRI0303265045'],
+            'FR forbidden letter O in second key char' => ['FR1O303265045'],
+            'FR forbidden letter I in second key char' => ['FR1I303265045'],
+            'FR SIREN too short' => ['FR4030326504'],
+            'FR SIREN too long' => ['FR403032650456'],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function validBeVatFormatsProvider(): array
+    {
+        return [
+            'BE valid starting with 0' => ['BE0123456789'],
+            'BE valid starting with 1' => ['BE1123456789'],
+            'BE valid lowercase' => ['be0123456789'],
+            'BE valid with surrounding spaces' => [' BE0123456789 '],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function invalidBeVatFormatsProvider(): array
+    {
+        return [
+            'BE invalid starting with 2' => ['BE2123456789'],
+            'BE invalid starting with 9' => ['BE9123456789'],
+            'BE invalid 9 digits' => ['BE012345678'],
+            'BE invalid 11 digits' => ['BE01234567890'],
+            'BE invalid letters' => ['BE012345678A'],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function validAtVatFormatsProvider(): array
+    {
+        return [
+            'AT valid U + 8 digits' => ['ATU12345678'],
+            'AT valid lowercase' => ['atu12345678'],
+            'AT valid with surrounding spaces' => [' ATU12345678 '],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function invalidAtVatFormatsProvider(): array
+    {
+        return [
+            'AT invalid letters after U' => ['ATU1234567A'],
+            'AT invalid missing U' => ['AT123456789'],
+            'AT invalid 7 digits' => ['ATU1234567'],
+            'AT invalid 9 digits' => ['ATU123456789'],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function validSiVatFormatsProvider(): array
+    {
+        return [
+            'SI valid 8 digits' => ['SI12345678'],
+            'SI valid starting with 9' => ['SI98765432'],
+            'SI valid lowercase' => ['si12345678'],
+            'SI valid with surrounding spaces' => [' SI12345678 '],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function invalidSiVatFormatsProvider(): array
+    {
+        return [
+            'SI invalid leading zero' => ['SI01234567'],
+            'SI invalid 7 digits' => ['SI1234567'],
+            'SI invalid 9 digits' => ['SI123456789'],
+            'SI invalid letters' => ['SI1234567A'],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function validIeVatFormatsProvider(): array
+    {
+        return [
+            'IE valid current style' => ['IE6388047V'],
+            'IE valid current style with a second letter' => ['IE1234567FA'],
+            'IE valid current style with W as second letter' => ['IE1234567FW'],
+            'IE valid old style with a letter' => ['IE1A23456A'],
+            'IE valid old style with a plus sign' => ['IE1+23456A'],
+            'IE valid old style with an asterisk' => ['IE1*23456A'],
+            'IE valid lowercase' => ['ie6388047v'],
+            'IE valid with surrounding spaces' => [' IE6388047V '],
+        ];
+    }
+
+    /**
+     * @return array<string, array<string>>
+     */
+    public static function invalidIeVatFormatsProvider(): array
+    {
+        return [
+            'IE invalid all digits' => ['IE12345678'],
+            'IE invalid all letters' => ['IEABCDEFGH'],
+            'IE invalid missing check letter' => ['IE1234567'],
+            'IE invalid check letter out of range' => ['IE1234567X'],
+            'IE invalid second letter out of range' => ['IE1234567FZ'],
+            'IE invalid old style too short' => ['IE1A2345A'],
+            'IE invalid old style check letter out of range' => ['IE1A23456X'],
+            'IE invalid too long' => ['IE1234567FAB'],
+        ];
+    }
+
+    public static function validChVatFormatsProvider(): array
+    {
+        return [
+            'CH valid 6 digits' => ['CH123456'],
+            'CH valid E + 9 digits' => ['CHE123456789'],
+            'CH valid E + 9 digits + TVA' => ['CHE123456789TVA'],
+            'CH valid E + 9 digits + MWST' => ['CHE123456789MWST'],
+            'CH valid E + 9 digits + IVA' => ['CHE123456789IVA'],
+            'CH valid E + 9 digits + space + TVA' => ['CHE123456789 TVA'],
+            'CH valid E + 9 digits + space + MWST' => ['CHE123456789 MWST'],
+            'CH valid E + 9 digits + space + IVA' => ['CHE123456789 IVA'],
+            'CH valid lowercase 6 digits' => ['ch123456'],
+            'CH valid lowercase E + 9 digits' => ['che123456789'],
+            'CH valid E + 9 digits + lowercase suffix' => ['CHE123456789tva'],
+        ];
+    }
+
+    public static function invalidChVatFormatsProvider(): array
+    {
+        return [
+            'CH invalid 5 digits' => ['CH12345'],
+            'CH invalid 7 digits' => ['CH1234567'],
+            'CH invalid E + 8 digits' => ['CHE12345678'],
+            'CH invalid E + 10 digits' => ['CHE1234567890'],
+            'CH invalid suffix' => ['CHE123456789XYZ'],
+            'CH invalid partial suffix' => ['CHE123456789TV'],
+            'CH invalid first letter' => ['CHA123456'],
+            'CH invalid E + 9 digits + invalid suffix' => ['CHE123456789ABC'],
+            'CH invalid E + 9 digits + space + invalid suffix' => ['CHE123456789 ABC'],
+            'CH invalid double suffix' => ['CHE123456789TVAMWST'],
+            'CH invalid special chars' => ['CH12-34-56'],
+            'CH invalid missing E' => ['CH123456789TVA'],
+        ];
     }
 
     public function testVatValidFormat(): void
